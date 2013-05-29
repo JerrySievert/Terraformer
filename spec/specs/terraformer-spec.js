@@ -1,6 +1,6 @@
 if(typeof module === "object"){
   var Terraformer = require("../../dist/node/terraformer.js");
-  var GeoJSON = require("../..//spec/spec/GeoJSON.js");
+  var GeoJSON = require("../GeoJSON.js");
 }
 
 beforeEach(function() {
@@ -99,12 +99,27 @@ describe("Primitives", function(){
 
     it("should convert a Primitive to JSON", function(){
       var geometryCollection = new Terraformer.Primitive(GeoJSON.geometryCollections[0]);
-
       var json = geometryCollection.toJSON();
       expect(json.bbox).toBeTruthy();
       expect(json.type).toBeTruthy();
       expect(json.geometries).toBeTruthy();
       expect(json.length).toBeFalsy();
+    });
+
+    it("should convert a Circle Primitive to JSON", function(){
+      var circle = new Terraformer.Circle([45.5165, -1226764], 100);
+      var json = circle.toJSON();
+      expect(json.bbox).toBeTruthy();
+      expect(json.type).toEqual("Feature");
+      expect(json.geometry).toBeTruthy();
+      expect(json.geometry.coordinates).toBeTruthy();
+      expect(json.geometry.bbox).toBeFalsy();
+      expect(json.center).toBeFalsy();
+      expect(json.steps).toBeFalsy();
+      expect(json.radius).toBeFalsy();
+      expect(json.properties.center).toBeTruthy();
+      expect(json.properties.steps).toBeTruthy();
+      expect(json.properties.radius).toBeTruthy();
     });
 
     it("should convert a Primitive to stringified JSON", function(){
@@ -348,6 +363,22 @@ describe("Primitives", function(){
 
     it("should calculate envelope", function(){
       expect(multiPoint.envelope()).toEqual({ x : -45, y : 0, w : 145, h : 122 });
+    });
+
+    it("should contain a polygon", function(){
+      expect(polygon.contains({type:"Polygon", coordinates: [ [ [100.5, 0.5],[100.7, 0.5],[100.7, 0.7],[100.5, 0.7],[100.5, 0.5] ] ] })).toEqual(true);
+    });
+
+    it("should fail when does not contain a polygon", function(){
+      expect(polygon.contains({type:"Polygon", coordinates: [ [ [101.5, 1.5],[101.7, 1.5],[101.7, 1.7],[101.5, 1.7],[101.5, 1.5] ] ] })).toEqual(false);
+    });
+
+    it("should fail when does not contain a multipolygon", function(){
+      expect(polygon.contains({type:"MultiPolygon", coordinates: [ [ [ [101.5, 1.5],[101.7, 1.5],[101.7, 1.7],[101.5, 1.7],[101.5, 1.5] ] ] ] })).toEqual(false);
+    });
+
+    it("should contain a multipolygon", function(){
+      expect(polygon.contains({type:"MultiPolygon", coordinates: [ [ [ [100.5, 0.5],[100.7, 0.5],[100.7, 0.7],[100.5, 0.7],[100.5, 0.5] ] ] ] })).toEqual(true);
     });
   });
 

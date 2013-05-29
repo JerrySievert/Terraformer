@@ -284,26 +284,6 @@
   }
 
   /*
-  Internal: Loop over each geometry in a geojson object and apply a function to it. Used by spatial reference converters.
-  */
-  function eachGeometry(geojson, func){
-    for (var i = 0; i < geojson.geometries.length; i++) {
-      geojson.geometries[i].geometry = eachPosition(geojson.features[i].geometry, func);
-    }
-    return geojson;
-  }
-
-  /*
-  Internal: Loop over each feature in a geojson object and apply a function to it. Used by spatial reference converters.
-  */
-  function eachFeature(geojson, func){
-    for (var i = 0; i < geojson.features.length; i++) {
-      geojson.features[i].geometry = eachPosition(geojson.features[i].geometry, func);
-    }
-    return geojson;
-  }
-
-  /*
   Internal: Loop over each array in a geojson object and apply a function to it. Used by spatial reference converters.
   */
   function eachPosition(coordinates, func) {
@@ -341,21 +321,27 @@
   /*
   Public: Apply a function agaist all positions in a geojson object. Used by spatial reference converters.
   */
-  function applyConverter(geojson, converter){
+  function applyConverter(geojson, converter, noCrs){
     if(geojson.type === "Point") {
       geojson.coordinates = converter(geojson.coordinates);
     } else if(geojson.type === "Feature") {
-      geojson.geometry = applyConverter(geojson, converter);
+      geojson.geometry = applyConverter(geojson.geometry, converter, true);
     } else if(geojson.type === "FeatureCollection") {
-      geojson.features = eachFeature(geojson, converter);
+      for (var f = 0; f < geojson.features.length; f++) {
+        geojson.features[f] = applyConverter(geojson.features[f], converter, true);
+      }
     } else if(geojson.type === "GeometryCollection") {
-      geojson.geometries = eachGeometry(geojson, converter);
+      for (var g = 0; g < geojson.geometries.length; g++) {
+        geojson.geometries[g] = applyConverter(geojson.geometries[g], converter, true);
+      }
     } else {
       geojson.coordinates = eachPosition(geojson.coordinates, converter);
     }
 
-    if(converter === positionToMercator){
-      geojson.crs = MercatorCRS;
+    if(!noCrs){
+      if(converter === positionToMercator){
+        geojson.crs = MercatorCRS;
+      }
     }
 
     if(converter === positionToGeographic){
@@ -612,7 +598,7 @@
   /*
   Internal: An array of variables that will be excluded form JSON objects.
   */
-  var excludeFromJSON = ["length"];
+  var excludeFromJSON = ["length", "bbox"];
 
   /*
   Internal: Base GeoJSON Primitive
@@ -714,6 +700,7 @@
           obj[key] = this[key];
         }
       }
+      obj.bbox = calculateBounds(this);
       return obj;
     },
     toJson: function () {
@@ -984,11 +971,31 @@
     return this;
   };
   Polygon.prototype.contains = function(primitive) {
-    if (primitive.type !== "Point") {
-      throw new Error("Only points are supported");
+    if (primitive.type === "Point") {
+      return polygonContainsPoint(this.coordinates, primitive.coordinates);
+    } else if (primitive.type === "Polygon") {
+      if (primitive.coordinates.length > 0 && primitive.coordinates[0].length > 0) {
+        // naive assertion - contains a point and does not intersect
+        if (polygonContainsPoint(this.coordinates, primitive.coordinates[0][0]) === true &&
+            this.intersects(primitive) === false) {
+          return true;
+        }
+      }
+    } else if (primitive.type === "MultiPolygon") {
+      if (primitive.coordinates.length > 0) {
+        // same naive assertion, but loop through all of the inner polygons
+        for (var i = 0; i < primitive.coordinates.length; i++) {
+          if (primitive.coordinates[i][0].length > 0) {
+            if (polygonContainsPoint(this.coordinates, primitive.coordinates[i][0][0]) === true &&
+                this.intersects({ type: "Polygon", coordinates: primitive.coordinates[i] }) === false) {
+              return true;
+            }
+          }
+        }
+      }
     }
 
-    return polygonContainsPoint(this.coordinates, primitive.coordinates);
+    return false;
   };
 
   /*
@@ -1261,12 +1268,24 @@
     this.geometry = createCircle(this.center, this.radius, this.steps);
     return this;
   };
+
   Circle.prototype.contains = function(primitive) {
     if (primitive.type !== "Point") {
       throw new Error("Only points are supported");
     }
 
     return polygonContainsPoint(this.geometry.coordinates, primitive.coordinates);
+  };
+
+  Circle.prototype.toJSON = function() {
+    var output = Primitive.prototype.toJSON.call(this);
+    output.properties.center = output.center;
+    output.properties.steps = output.steps;
+    output.properties.radius = output.radius;
+    delete output.center;
+    delete output.steps;
+    delete output.radius;
+    return output;
   };
 
   exports.Primitive = Primitive;
