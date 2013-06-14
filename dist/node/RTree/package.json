@@ -1,6 +1,6 @@
 {
   "name": "terraformer-rtree",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Terraformer RTree",
   "main": "index.js",
   "scripts": {

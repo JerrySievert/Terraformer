@@ -22,12 +22,34 @@ function rectFromShape (shape) {
 }
 
 arrayIndex.prototype.serialize = function (callback) {
-  callback(null, this._index);
+  var dfd = new Terraformer.Deferred();
+  if(callback){
+    dfd.then(function(result){
+      callback(null, result);
+    }, function(error){
+      callback(error, null);
+    });
+  }
+
+  dfd.resolve(this._index);
+  return dfd;
 };
 
 arrayIndex.prototype.deserialize = function (data, callback) {
   this._index = data;
-  callback(null);
+
+
+  var dfd = new Terraformer.Deferred();
+  if(callback){
+    dfd.then(function(result){
+      callback(null, result);
+    }, function(error){
+      callback(error, null);
+    });
+  }
+
+  dfd.resolve();
+  return dfd;
 };
 
 arrayIndex.prototype.search = function (shape, callback) {
@@ -41,7 +63,18 @@ arrayIndex.prototype.search = function (shape, callback) {
     }
   }
 
-  return results;
+  var dfd = new Terraformer.Deferred();
+  if(callback){
+    dfd.then(function(result){
+      callback(null, result);
+    }, function(error){
+      callback(error, null);
+    });
+  }
+
+  dfd.resolve(results);
+
+  return dfd;
 };
 
 arrayIndex.prototype.insert = function (shape, object, callback) {
@@ -51,7 +84,17 @@ arrayIndex.prototype.insert = function (shape, object, callback) {
 
   this._index.push(shape);
 
-  callback(null);
+  var dfd = new Terraformer.Deferred();
+  if(callback){
+    dfd.then(function(result){
+      callback(null, result);
+    }, function(error){
+      callback(error, null);
+    });
+  }
+
+  dfd.resolve();
+  return dfd;
 };
 
 exports.arrayIndex = arrayIndex;
