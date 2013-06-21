@@ -14,7 +14,7 @@ var arrayStoreTest = new GeoStore({
   index: new arrayIndex()
 });
 
-var a = new superArray(80, -172, 107);
+var a = new superArray(100, -172, 107);
 var superStoreTest = new GeoStore({
   store: new Memory(),
   index: a //new superArray(20, -171.74517, 107)
