@@ -56,7 +56,7 @@ arrayIndex.prototype.search = function (shape, callback) {
   var rect = rectFromShape(shape);
   var results = [ ];
 
-  for (var i = 0; i < this._index.length; i++) {
+  for (var i = this._index.length - 1; i >= 0; i--) {
     if (rect.x >= this._index[i].x && rect.x <= (this._index[i].x + this._index[i].w) &&
         rect.y >= this._index[i].y && rect.y <= (this._index[i].y + this._index[i].h)) {
       results.push(this._index[i].object);
@@ -82,7 +82,7 @@ arrayIndex.prototype.insert = function (shape, object, callback) {
 
   rect.object = object;
 
-  this._index.push(shape);
+  this._index.push(rect);
 
   var dfd = new Terraformer.Deferred();
   if(callback){
