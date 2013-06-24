@@ -1,19 +1,8 @@
 var Terraformer = require('terraformer');
 
-function superArrayIndex (buckets, x, width) {
-  this._index  = [ ];
-  this.buckets = buckets;
-  this.x       = x;
-  this.width   = width;
-
-  for (var i = 0; i < this.buckets; i++) {
-    this._index[i] = [ ];
-  }
-}
-
 function rectFromShape (shape) {
   var rect;
-  if(shape.type){
+  if(shape.type) {
     var b = Terraformer.Tools.calculateBounds(shape);
     rect = {
       x: b[0],
@@ -26,6 +15,42 @@ function rectFromShape (shape) {
   }
 
   return rect;
+}
+
+
+function buildBucketMaths (buckets, xOffset, width) {
+  return function (rect) {
+    var x = rect.x < 0 ? -rect.x : rect.x;
+    var w = x - (rect.w < 0 ? -rect.w : rect.w);
+
+    var endBucket = (~~x) - 1;
+    var startBucket = (~~w) - 1;
+
+    var buckets = [ ];
+
+    for (var i = startBucket; i <= endBucket; i++) {
+      buckets.push(i);
+    }
+
+    return buckets;
+  };
+}
+
+
+function superArrayIndex (options) {
+  this._index  = [ ];
+  options = options || { };
+
+  this.options = options;
+  this.buckets = options.buckets || 180;
+  this.xOffset = options.xOffset || 0;
+  this.width   = options.width   || 180;
+
+  for (var i = 0; i < this.buckets; i++) {
+    this._index[i] = [ ];
+  }
+
+  this.bucketsFromRect = buildBucketMaths(this.buckets, this.xOffset, this.width);
 }
 
 superArrayIndex.prototype.serialize = function (callback) {
@@ -59,21 +84,6 @@ superArrayIndex.prototype.deserialize = function (data, callback) {
   return dfd;
 };
 
-superArrayIndex.prototype.bucketsFromRect = function (rect) {
-  var x = (this.x - rect.x);
-
-  var startBucket = Math.abs(Math.floor((x / this.width) * this.buckets)) - 1;
-  var endBucket = Math.abs(Math.floor(((x - rect.w) / this.width) * this.buckets)) - 1;
-
-  var buckets = [ ];
-
-  for (var i = startBucket; i <= endBucket; i++) {
-    buckets.push(i);
-  }
-
-  return buckets;
-};
-
 superArrayIndex.prototype.search = function (shape, callback) {
   var rect = rectFromShape(shape);
   var results = [ ];
@@ -87,6 +97,9 @@ superArrayIndex.prototype.search = function (shape, callback) {
       if (rect.x >= this._index[bucket][i].x && rect.x <= (this._index[bucket][i].x + this._index[bucket][i].w) &&
           rect.y >= this._index[bucket][i].y && rect.y <= (this._index[bucket][i].y + this._index[bucket][i].h)) {
         results.push(this._index[bucket][i].object);
+        if (rect.y + rect.w < this._index[bucket][i].y) {
+          break;
+        }
       }
     }
   }
@@ -114,6 +127,9 @@ superArrayIndex.prototype.insert = function (shape, object, callback) {
 
   for (var b = 0; b < buckets.length; b++) {
     this._index[buckets[b]].push(rect);
+    this._index[buckets[b]] = this._index[buckets[b]].sort(function (a, b) {
+      return (a.y > b.y) ? -1 : 1;
+    });
   }
 
   var dfd = new Terraformer.Deferred();

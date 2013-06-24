@@ -14,7 +14,7 @@ var arrayStoreTest = new GeoStore({
   index: new arrayIndex()
 });
 
-var a = new superArray(100, -172, 107);
+var a = new superArray();
 var superStoreTest = new GeoStore({
   store: new Memory(),
   index: a //new superArray(20, -171.74517, 107)
@@ -39,6 +39,15 @@ var bismark  = { type: "Point", coordinates: [ -100.7833, 46.8083 ] };
 var austin   = { type: "Point", coordinates: [ -97.7428, 30.2669 ] };
 var boston   = { type: "Point", coordinates: [ -71.0603, 42.3583 ] };
 var tampa    = { type: "Point", coordinates: [ -81.9604, 28.0908 ] };
+
+/*
+  superStoreTest.contains(portland).then(function (results){ console.dir(results); });
+  superStoreTest.contains(la).then(function (results){ console.dir(results); });
+  superStoreTest.contains(bismark).then(function (results){ console.dir(results); });
+  superStoreTest.contains(austin).then(function (results){ console.dir(results); });
+  superStoreTest.contains(boston).then(function (results){ console.dir(results); });
+  superStoreTest.contains(tampa).then(function (results){ console.dir(results); });
+*/
 
 var suite = new Benchmark.Suite();
 
